@@ -15,7 +15,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r}
+```{r, echo=FALSE}
 #install.packages("kableExtra")  # If you haven't installed it yet
 #install.packages("DT")  # Run this if you haven't installed it yet
 library(knitr)
@@ -24,24 +24,110 @@ library(kableExtra)
 library(dplyr)
 library(DT)
 
-# Now read the CSV file from the directory
-data <- read_csv("MAGMA/FDR/Male_AB42_gene_APOE_outcome_with_FDR.csv")  # Use your actual file name
-
 # Function for formatting p-value columns
 format_p_values <- function(df) {
   df %>% mutate(across(starts_with("P"), ~formatC(., format = "e", digits = 3)))
 }
 
+# Set the directory containing the files
+data_dir <- "MAGMA/FDR"  # Set the correct path to the directory containing your files
+files <- list.files(data_dir, pattern = "\\.csv$", full.names = TRUE)
+
+# Create a nested list to store data frames categorized by model, apoe_status, and sig_status
+data_list <- list(gene = list(), pathway = list(), self_contained = list())
+
+# Loop through each file and categorize by model, apoe_status, and sig_status
+for (file in files) {
+  # Extract model from filename
+  file_name <- basename(file)
+  print(file_name)
+  parts <- strsplit(file_name, "_")[[1]]
+  
+  if (length(parts) >= 4) {
+    prefix <- paste(parts[1:2], collapse = "_")  # Combine the prefix words
+    model <- parts[3]  # Model is the third part of the name
+    apoe_status <- parts[4]  # APOE status is the fourth part of the name
+    sig_status <- ifelse(parts[5] == "outcome", "all", parts[5])  # Check if sig_status is empty
+    
+    data <- read_csv(file)  # Read the CSV file
+    data <- format_p_values(data)  # Format p-value columns
+
+# Ensure nested structure to store data appropriately
+  if (!is.null(data_list[[model]][[apoe_status]])) {
+    if (!is.null(data_list[[model]][[apoe_status]][[sig_status]])) {
+      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- data# Store data by actual file name
+    } else {
+      data_list[[model]][[apoe_status]][[sig_status]] <- list()  # Create sig_status if it doesn't exist
+      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- data# Store data by actual file name
+    }
+  } else {
+      data_list[[model]][[apoe_status]] <- list()  # Create apoe_status if it doesn't exist
+      data_list[[model]][[apoe_status]][[sig_status]] <- list()  # Initialize sig_status list
+      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- data# Store data by actual file name
+    }
+  }
+}
+
+
+# Create sections for each model type, then apoe_status, then sig_status
+for (model in names(data_list)) {
+  cat(paste0("## ", model, "\n\n"))  # Create model section
+  
+  for (apoe in names(data_list[[model]])) {
+    cat(paste0("### APOE Status: ", apoe, "\n\n"))  # Create apoe_status section
+
+    for (sig in names(data_list[[model]][[apoe]])) {
+      cat(paste0("#### Sig Status: ", sig, "\n"))  # Create sig_status sub-section
+
+      if (length(data_list[[model]][[apoe]][[sig]]) > 0) {
+        for (name in names(data_list[[model]][[apoe]][[sig]])) {
+          # Display the data as an interactive table with pagination and sorting
+          cat(paste0("##### ", name, "\n"))  # Create file name subsection
+          datatable(data_list[[model]][[apoe]][[sig]][[name]], 
+                    options = list(pageLength = 10),  # Number of rows to display per page
+                    class = 'cell-border stripe',      # Add styling class if needed
+                    rownames = FALSE) %>%
+            formatStyle(columns = names(data_list[[model]][[apoe]][[sig]][[name]]), 
+                        `text-align` = "center")  # Center align all columns
+
+          # Add a separator for clarity in the output
+          cat("<br/>")  # Add some space after each table
+        }
+      } else {
+        cat("No data available for this combination.\n\n")  # Handle case with no data
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Now read the CSV file from the directory
+#data <- read_csv("MAGMA/FDR/Male_AB42_gene_APOE_outcome_with_FDR.csv")  # Use your actual file name
+
+
+
 # Format p-value columns
-data <- format_p_values(data)
+#data <- format_p_values(data)
 
 # Display the data as an interactive table with pagination and sorting
-datatable(data, 
-          options = list(pageLength = 10),  # Number of rows to display per page
-          class = 'cell-border stripe',      # Add styling class if needed
-          rownames = FALSE) %>%
-  formatStyle(columns = names(data), 
-              `text-align` = "center")  # Center align all columns
+#datatable(data, 
+#          options = list(pageLength = 10),  # Number of rows to display per page
+#          class = 'cell-border stripe',      # Add styling class if needed
+#          rownames = FALSE) %>%
+#  formatStyle(columns = names(data), 
+#              `text-align` = "center")  # Center align all columns
 ```
 
 ## Including Plots
