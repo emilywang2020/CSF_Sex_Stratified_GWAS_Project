@@ -15,7 +15,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r, echo=FALSE}
+```{r read-data, echo=FALSE}
 #install.packages("kableExtra")  # If you haven't installed it yet
 #install.packages("DT")  # Run this if you haven't installed it yet
 library(knitr)
@@ -40,16 +40,16 @@ data_list <- list(gene = list(), pathway = list(), self_contained = list())
 for (file in files) {
   # Extract model from filename
   file_name <- basename(file)
-  print(file_name)
+  file_name <- as.character(file_name)
   parts <- strsplit(file_name, "_")[[1]]
   
   if (length(parts) >= 4) {
     prefix <- paste(parts[1:2], collapse = "_")  # Combine the prefix words
-    model <- parts[3]  # Model is the third part of the name
-    apoe_status <- parts[4]  # APOE status is the fourth part of the name
-    sig_status <- ifelse(parts[5] == "outcome", "all", parts[5])  # Check if sig_status is empty
+    model <- as.character(parts[3])  # Model is the third part of the name
+    apoe_status <- as.character(parts[4])  # APOE status is the fourth part of the name
+    sig_status <- ifelse(parts[5] == "outcome", "all", as.character(parts[5]))  # Check if sig_status is empty
     
-    data <- read_csv(file)  # Read the CSV file
+    data <- read_csv(file, show_col_types = FALSE)  # Read the CSV file
     data <- format_p_values(data)  # Format p-value columns
 
 # Ensure nested structure to store data appropriately
@@ -68,45 +68,40 @@ for (file in files) {
   }
 }
 
+# Example to render Gene, noAPOE, sig
+cat("## Gene\n\n")
+cat("### APOE Status: noAPOE\n\n")
+cat("#### Sig Status: sig\n")  
+# Access the data frame
+#df_gene_noAPOE_sig <- data_list[['gene']][['noAPOE']][['sig']][[1]]
+#for (i in 1:length(data_list[['gene']][['noAPOE']][['sig']])) {
+#  #print(data_list[['gene']][['noAPOE']][['sig']][[i]])
+#  df_gene_noAPOE_sig <- data_list[['gene']][['noAPOE']][['sig']][[file]]
+#  print(datatable(df_gene_noAPOE_sig, class = 'cell-border stripe', rownames = FALSE) %>%
+#    formatStyle(columns = names(df_gene_noAPOE_sig), `text-align` = "center"))
 
-# Create sections for each model type, then apoe_status, then sig_status
-for (model in names(data_list)) {
-  cat(paste0("## ", model, "\n\n"))  # Create model section
+#}
+
+
+# Access the data frame
+tables_list <- list()  # Create a list to store the tables
+
+# Loop over and create a datatable for each item
+for (i in 1:length(data_list[['gene']][['noAPOE']][['sig']])) {
   
-  for (apoe in names(data_list[[model]])) {
-    cat(paste0("### APOE Status: ", apoe, "\n\n"))  # Create apoe_status section
+  df_gene_noAPOE_sig <- data_list[['gene']][['noAPOE']][['sig']][[i]]
 
-    for (sig in names(data_list[[model]][[apoe]])) {
-      cat(paste0("#### Sig Status: ", sig, "\n"))  # Create sig_status sub-section
-
-      if (length(data_list[[model]][[apoe]][[sig]]) > 0) {
-        for (name in names(data_list[[model]][[apoe]][[sig]])) {
-          # Display the data as an interactive table with pagination and sorting
-          cat(paste0("##### ", name, "\n"))  # Create file name subsection
-          datatable(data_list[[model]][[apoe]][[sig]][[name]], 
-                    options = list(pageLength = 10),  # Number of rows to display per page
-                    class = 'cell-border stripe',      # Add styling class if needed
-                    rownames = FALSE) %>%
-            formatStyle(columns = names(data_list[[model]][[apoe]][[sig]][[name]]), 
-                        `text-align` = "center")  # Center align all columns
-
-          # Add a separator for clarity in the output
-          cat("<br/>")  # Add some space after each table
-        }
-      } else {
-        cat("No data available for this combination.\n\n")  # Handle case with no data
-      }
-    }
-  }
+  # Create the datatable and store it in the list
+  tables_list[[i]] <- datatable(df_gene_noAPOE_sig, 
+                                 class = 'cell-border stripe', 
+                                 rownames = FALSE) %>%
+    formatStyle(columns = names(df_gene_noAPOE_sig), `text-align` = "center")
 }
 
-
-
-
-
-
-
-
+# Render all tables at once
+for (table in tables_list) {
+  print(table)  # Print each table
+}
 
 
 
