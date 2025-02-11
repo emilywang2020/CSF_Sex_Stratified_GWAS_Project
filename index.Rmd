@@ -16,15 +16,32 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
+#install.packages("kableExtra")  # If you haven't installed it yet
+#install.packages("DT")  # Run this if you haven't installed it yet
 library(knitr)
 library(readr)
+library(kableExtra)
+library(dplyr)
+library(DT)
 
 # Now read the CSV file from the directory
 data <- read_csv("MAGMA/FDR/Male_AB42_gene_APOE_outcome_with_FDR.csv")  # Use your actual file name
 
-# Display the data as a table
-kable(data)
+# Function for formatting p-value columns
+format_p_values <- function(df) {
+  df %>% mutate(across(starts_with("P"), ~formatC(., format = "e", digits = 3)))
+}
 
+# Format p-value columns
+data <- format_p_values(data)
+
+# Display the data as an interactive table with pagination and sorting
+datatable(data, 
+          options = list(pageLength = 10),  # Number of rows to display per page
+          class = 'cell-border stripe',      # Add styling class if needed
+          rownames = FALSE) %>%
+  formatStyle(columns = names(data), 
+              `text-align` = "center")  # Center align all columns
 ```
 
 ## Including Plots
