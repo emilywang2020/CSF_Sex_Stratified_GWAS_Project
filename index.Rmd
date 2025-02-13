@@ -1,7 +1,7 @@
 ---
 title: "CSF Sex Stratified GWAS"
 author: "Ting-Chen Wang"
-date: "2/11/2025"
+date: "2/12/2025"
 output: html_document
 ---
 
@@ -15,7 +15,12 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r read-data, echo=FALSE}
+# Main Title
+
+<details open>
+<summary>Gene</summary>
+
+```{r chunk_name, message=FALSE, warning=FALSE, echo=FALSE}
 #install.packages("kableExtra")  # If you haven't installed it yet
 #install.packages("DT")  # Run this if you haven't installed it yet
 library(knitr)
@@ -36,42 +41,43 @@ files <- list.files(data_dir, pattern = "\\.csv$", full.names = TRUE)
 # Create a nested list to store data frames categorized by model, apoe_status, and sig_status
 data_list <- list(gene = list(), pathway = list(), self_contained = list())
 
+# Assuming data_list is initialized as an empty list somewhere before this loop
+data_list <- list()
+
 # Loop through each file and categorize by model, apoe_status, and sig_status
 for (file in files) {
   # Extract model from filename
   file_name <- basename(file)
-  file_name <- as.character(file_name)
   parts <- strsplit(file_name, "_")[[1]]
   
   if (length(parts) >= 4) {
     prefix <- paste(parts[1:2], collapse = "_")  # Combine the prefix words
     model <- as.character(parts[3])  # Model is the third part of the name
     apoe_status <- as.character(parts[4])  # APOE status is the fourth part of the name
-    sig_status <- ifelse(parts[5] == "outcome", "all", as.character(parts[5]))  # Check if sig_status is empty
+    sig_status <- ifelse(parts[5] == "outcome", "all", as.character(parts[5]))  # Determine sig_status
     
     data <- read_csv(file, show_col_types = FALSE)  # Read the CSV file
     data <- format_p_values(data)  # Format p-value columns
 
-# Ensure nested structure to store data appropriately
-  if (!is.null(data_list[[model]][[apoe_status]])) {
-    if (!is.null(data_list[[model]][[apoe_status]][[sig_status]])) {
-      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- data# Store data by actual file name
+    # Ensure nested structure to store data and filename appropriately
+    if (!is.null(data_list[[model]][[apoe_status]])) {
+      if (!is.null(data_list[[model]][[apoe_status]][[sig_status]])) {
+        # Store the data and the filename as a list
+        data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- list(data = data, filename = file_name)
+      } else {
+        data_list[[model]][[apoe_status]][[sig_status]] <- list()  # Create sig_status if it doesn't exist
+        data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- list(data = data, filename = file_name)  # Store data and filename
+      }
     } else {
-      data_list[[model]][[apoe_status]][[sig_status]] <- list()  # Create sig_status if it doesn't exist
-      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- data# Store data by actual file name
-    }
-  } else {
       data_list[[model]][[apoe_status]] <- list()  # Create apoe_status if it doesn't exist
       data_list[[model]][[apoe_status]][[sig_status]] <- list()  # Initialize sig_status list
-      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- data# Store data by actual file name
+      data_list[[model]][[apoe_status]][[sig_status]][[file_name]] <- list(data = data, filename = file_name)  # Store data and filename
     }
   }
 }
 
-# Example to render Gene, noAPOE, sig
-cat("## Gene\n\n")
-cat("### APOE Status: noAPOE\n\n")
-cat("#### Sig Status: sig\n")  
+
+
 # Access the data frame
 #df_gene_noAPOE_sig <- data_list[['gene']][['noAPOE']][['sig']][[1]]
 #for (i in 1:length(data_list[['gene']][['noAPOE']][['sig']])) {
@@ -84,28 +90,24 @@ cat("#### Sig Status: sig\n")
 
 
 # Access the data frame
-tables_list <- list()  # Create a list to store the tables
+#tables_list <- list()  # Create a list to store the tables
 
 # Loop over and create a datatable for each item
-for (i in 1:length(data_list[['gene']][['noAPOE']][['sig']])) {
+#for (i in 1:length(data_list[['gene']][['noAPOE']][['sig']])) {
   
-  df_gene_noAPOE_sig <- data_list[['gene']][['noAPOE']][['sig']][[i]]
+#  df_gene_noAPOE_sig <- data_list[['gene']][['noAPOE']][['sig']][[i]]
 
   # Create the datatable and store it in the list
-  tables_list[[i]] <- datatable(df_gene_noAPOE_sig, 
-                                 class = 'cell-border stripe', 
-                                 rownames = FALSE) %>%
-    formatStyle(columns = names(df_gene_noAPOE_sig), `text-align` = "center")
-}
+#  tables_list[[i]] <- datatable(df_gene_noAPOE_sig, 
+#                                 class = 'cell-border stripe', 
+#                                 rownames = FALSE) %>%
+#    formatStyle(columns = names(df_gene_noAPOE_sig), `text-align` = "center")
+#}
 
 # Render all tables at once
-for (table in tables_list) {
-  print(table)  # Print each table
-}
-
-
-
-
+#for (table in tables_list) {
+#  print(table)  # Print each table
+#}
 
 
 # Now read the CSV file from the directory
@@ -125,10 +127,1360 @@ for (table in tables_list) {
 #              `text-align` = "center")  # Center align all columns
 ```
 
-## Including Plots
+<details open>
+<summary style="margin-left: 20px;">noAPOE</summary>
+<details open>
+<summary style="margin-left: 40px;">Significant Results</summary>
+``` {r gene_table, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['gene']][['noAPOE']][['sig']][[1]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['sig']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
 
-You can also embed plots, for example:
 
+
+df_to_display <- data_list[['gene']][['noAPOE']][['sig']][[2]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['sig']][[2]]$filename
+# Print the filename with custom HTML for styling
+print(df_to_display_filename)
+
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['sig']][[3]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['sig']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['sig']][[4]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['sig']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['sig']][[5]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['sig']][[5]]$filename
+
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['sig']][[6]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['sig']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+
+```
+</details> <!-- End of Significant Results -->
+
+<details open>
+<summary style="margin-left: 40px;">All Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['gene']][['noAPOE']][['all']][[1]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['all']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['all']][[2]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['all']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['all']][[3]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['all']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['all']][[4]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['all']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['all']][[5]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['all']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['noAPOE']][['all']][[6]]$data
+df_to_display_filename <- data_list[['gene']][['noAPOE']][['all']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+```
+</details> <!-- End of All Results -->
+</details> <!-- End of noAPOE Results -->
+
+
+<details open>
+<summary style="margin-left: 20px;">APOE</summary>
+<details open>
+<summary style="margin-left: 40px;">Significant Results</summary>
+
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['gene']][['APOE']][['sig']][[1]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['sig']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['sig']][[2]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['sig']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['sig']][[3]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['sig']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['sig']][[4]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['sig']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['sig']][[5]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['sig']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['sig']][[6]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['sig']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+```
+</details> <!-- End of Significant Results -->
+
+<details open>
+<summary style="margin-left: 40px;">All Results</summary> 
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['gene']][['APOE']][['all']][[1]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['all']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['all']][[2]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['all']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['all']][[3]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['all']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['all']][[4]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['all']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['all']][[5]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['all']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+
+df_to_display <- data_list[['gene']][['APOE']][['all']][[6]]$data
+df_to_display_filename <- data_list[['gene']][['APOE']][['all']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_MULTI_FDR',                           # Target the P_FDR column
+    target = 'row',                   # Format entire rows
+   fontWeight = styleInterval(0.05, c('bold', 'normal')))  # Bold if P_FDR < 0.05 # Bold if condition met
+  
+
+```
+</details> <!-- End of All Results -->
+</details> <!-- End of APOE Results -->
+</details> <!-- End of Gene Results -->
+
+<details open>
+<summary>Pathway</summary>
+<details open>
+<summary style="margin-left: 20px;">noAPOE</summary>
+<details open>
+<summary style="margin-left: 40px;">Significant Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['pathway']][['noAPOE']][['sig']][[1]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['sig']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['sig']][[2]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['sig']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['sig']][[3]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['sig']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['sig']][[4]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['sig']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['sig']][[5]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['sig']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['sig']][[6]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['sig']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+
+</details> <!-- End of Significant Results -->
+
+<details open>
+<summary style="margin-left: 40px;">All Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['pathway']][['noAPOE']][['all']][[1]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['all']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['all']][[2]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['all']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['all']][[3]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['all']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['all']][[4]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['all']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['all']][[5]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['all']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['noAPOE']][['all']][[6]]$data
+df_to_display_filename <- data_list[['pathway']][['noAPOE']][['all']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+
+</details> <!-- End of All Results -->
+</details> <!-- End of noAPOE Results -->
+
+<details open>
+<summary style="margin-left: 20px;">APOE</summary>
+<details open>
+<summary style="margin-left: 40px;">Significant Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['pathway']][['APOE']][['sig']][[1]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['sig']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['sig']][[2]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['sig']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['sig']][[3]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['sig']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['sig']][[4]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['sig']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['sig']][[5]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['sig']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['sig']][[6]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['sig']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+</details> <!-- End of Significant Results -->
+
+<details open>
+<summary style="margin-left: 40px;">All Results</summary>
+
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['pathway']][['APOE']][['all']][[1]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['all']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['all']][[2]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['all']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['all']][[3]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['all']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['all']][[4]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['all']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['all']][[5]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['all']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['pathway']][['APOE']][['all']][[6]]$data
+df_to_display_filename <- data_list[['pathway']][['APOE']][['all']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+
+</details> <!-- End of ALL Results -->
+</details> <!-- End of APOE Results -->
+</details> <!-- End of Pathway Results -->
+
+
+<details open>
+<summary>Self Contained</summary>
+<details open>
+<summary style="margin-left: 20px;">noAPOE</summary>
+<details open>
+<summary style="margin-left: 40px;">Significant Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['sig']][[1]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['sig']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['sig']][[2]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['sig']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['sig']][[3]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['sig']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['sig']][[4]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['sig']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['sig']][[5]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['sig']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['sig']][[6]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['sig']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+
+</details> <!-- End of Significant Results -->
+
+<details open>
+<summary style="margin-left: 40px;">All Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['all']][[1]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['all']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['all']][[2]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['all']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['all']][[3]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['all']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['all']][[4]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['all']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['all']][[5]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['all']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['noAPOE']][['all']][[6]]$data
+df_to_display_filename <- data_list[['selfcontained']][['noAPOE']][['all']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+</details> <!-- End of ALL Results -->
+</details> <!-- End of noAPOE Results -->
+
+
+<details open>
+<summary style="margin-left: 20px;">APOE</summary>
+<details open>
+<summary style="margin-left: 40px;">Significant Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['selfcontained']][['APOE']][['sig']][[1]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['sig']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['sig']][[2]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['sig']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['sig']][[3]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['sig']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['sig']][[4]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['sig']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['sig']][[5]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['sig']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['sig']][[6]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['sig']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+
+</details> <!-- End of Significant Results -->
+
+<details open>
+<summary style="margin-left: 40px;">All Results</summary>
+``` {r, message=FALSE, warning=FALSE, echo=FALSE}
+df_to_display <- data_list[['selfcontained']][['APOE']][['all']][[1]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['all']][[1]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+     fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['all']][[2]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['all']][[2]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['all']][[3]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['all']][[3]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['all']][[4]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['all']][[4]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['all']][[5]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['all']][[5]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+
+df_to_display <- data_list[['selfcontained']][['APOE']][['all']][[6]]$data
+df_to_display_filename <- data_list[['selfcontained']][['APOE']][['all']][[6]]$filename
+print(df_to_display_filename)
+datatable(df_to_display, #options = list(pageLength = 10), 
+          class = 'cell-border stripe', 
+         rownames = FALSE)%>%
+  formatStyle(
+    columns = names(df_to_display),  # Center align all columns
+    `text-align` = "center",          # Center alignment
+    `white-space` = "nowrap"          # Prevent text from wrapping
+  )%>%
+  formatStyle(
+    'P_FDR',                           # Specify the P_FDR column for conditional formatting
+    target = 'row',                   # Apply styles to rows
+    fontWeight = styleInterval(0.05, c('bold', 'normal')) 
+  )
+```
+
+</details> <!-- End of ALL Results -->
+</details> <!-- End of APOE Results -->
+</details> <!-- End of Self Contained Results -->
 ```{r pressure, echo=FALSE}
 ```
 
